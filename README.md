@@ -1,2 +1,2 @@
 # rtx-wattcap
-Super light and informative GPU monitoring and logging 
+Informative multi GPU monitoring and logging app.
