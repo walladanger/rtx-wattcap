@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  launcher-build:
+    name: Build WattCapLauncher.exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runs launcher/build.cmd unchanged, so CI uses the exact csc command you build with locally.
+      - name: Compile launcher
+        shell: cmd
+        working-directory: launcher
+        run: |
+          call build.cmd
+          if not exist WattCapLauncher.exe (echo WattCapLauncher.exe was not produced & exit /b 1)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WattCapLauncher
+          path: launcher/WattCapLauncher.exe
+
+  deliverable-drift:
+    name: Deliverable matches source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # build.py writes its output into the directory it runs in, so build from a scratch copy.
+      - name: Rebuild gpu-power-limit.cmd from source
+        run: |
+          rm -rf /tmp/rebuild && mkdir /tmp/rebuild
+          cp -r source/. /tmp/rebuild/
+          cd /tmp/rebuild && python3 build.py
+          cp /tmp/rebuild/gpu-power-limit.cmd "$RUNNER_TEMP/rebuilt.cmd"
+
+      - name: Compare with committed deliverable
+        run: |
+          if cmp -s "$RUNNER_TEMP/rebuilt.cmd" deliverable/gpu-power-limit.cmd; then
+            echo "deliverable/gpu-power-limit.cmd matches source"
+          else
+            echo "::error::deliverable/gpu-power-limit.cmd is out of date with source/. Rebuild with 'cd source && python build.py' and copy the output into deliverable/."
+            exit 1
+          fi
+
+  powershell-lint:
+    name: PSScriptAnalyzer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -Repository PSGallery
+
+      # Errors fail the job; warnings are reported but do not fail it.
+      # history/ and test-tools/ are archived or test code, so they are not linted.
+      - name: Analyze PowerShell scripts
+        shell: pwsh
+        run: |
+          $files = @('launcher/install.ps1', 'launcher/uninstall.ps1', 'source/payload.ps1')
+          $results = foreach ($f in $files) { Invoke-ScriptAnalyzer -Path $f -Severity Error, Warning }
+          $results | Sort-Object ScriptName, Line | Format-Table ScriptName, Line, Severity, RuleName, Message -AutoSize
+          if ($results | Where-Object { $_.Severity -eq 'Error' }) { Write-Error 'PSScriptAnalyzer reported errors.'; exit 1 }
