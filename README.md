@@ -1,10 +1,31 @@
-# WATTCAP: RTX 3090 power limiter
+# WATTCAP
 
-WATTCAP sets a power limit on every NVIDIA RTX 3090 in your PC, so the cards stay cooler and quieter at a lower wattage, and reapplies the limit every time Windows starts. It also includes a live monitor, usage reports, and per-card profiles.
+WATTCAP sets a power limit on every NVIDIA RTX 3090 in your PC, so the cards stay cooler and quieter at a lower wattage, and reapplies the limit every time Windows starts.
 
-It's a single Windows batch file, `deliverable/gpu-power-limit.cmd`, with a small PowerShell and C# layer for the boot task, the monitor, and the intro animation. There's an optional animated desktop-icon launcher in `launcher/`.
+[![CI](https://img.shields.io/github/actions/workflow/status/walladanger/rtx-wattcap/ci.yml?branch=main&label=CI)](.github/workflows/ci.yml) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) ![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)
+
+It also includes a live monitor, usage reports, and per-card profiles. It's a single Windows batch file, `deliverable/gpu-power-limit.cmd`, with a small PowerShell and C# layer for the boot task, the monitor, and the intro animation. There's an optional animated desktop-icon launcher in `launcher/`.
 
 > **Warning:** this changes how hard your GPUs run. Use the reset option (`[2]`) to return to the stock limit at any time.
+
+## Architecture
+
+```mermaid
+graph TD
+    Launcher["launcher/ desktop icon"] --> Menu["deliverable/gpu-power-limit.cmd menu"]
+    Menu --> NvidiaSmi["nvidia-smi power limit"]
+    Menu --> BootTask["scheduled boot task"]
+    BootTask --> NvidiaSmi
+    Menu --> Monitor["live monitor"]
+    Monitor --> CsvLog["CSV log"]
+    CsvLog --> Report["usage/efficiency report"]
+    Menu --> Intro["intro/outro animations"]
+    subgraph "PowerShell/C# layer"
+        BootTask
+        Monitor
+        Intro
+    end
+```
 
 ## Features
 
@@ -78,9 +99,16 @@ python build.py
 
 This writes `gpu-power-limit.cmd` into `source/`. Copy it into `deliverable/` to publish it. The launcher is built with `launcher\build.cmd` on Windows.
 
+## Screenshots
+
+![RTX intro preview](previews/rtx-intro-preview.gif)
+![WATTCAP intro resize](previews/wattcap-intro-resize.gif)
+
 ## Documentation
 
 - [Setup guide](docs/SETUP.md): installing, the desktop launcher, and troubleshooting.
+- [CHANGES](CHANGES-v5.md): version history.
+- [SUMMARY](SUMMARY.md): project summary.
 - [Onboarding](docs/ONBOARDING.md): how the code is organised and where to start changing it.
 - [Testing](docs/TESTING.md): automated checks and the hardware checklist.
 - [Code summary](docs/WATTCAP-code-summary.md): a file-by-file tour.
@@ -89,6 +117,6 @@ This writes `gpu-power-limit.cmd` into `source/`. Copy it into `deliverable/` to
 
 Issues and pull requests are welcome. Before opening a pull request, run the drift check in [docs/TESTING.md](docs/TESTING.md) if you changed anything under `source/`, so the deliverable stays in step with the source.
 
-## Licence
+## License
 
 MIT. See [LICENSE](LICENSE).
