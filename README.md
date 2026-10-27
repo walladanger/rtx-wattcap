@@ -1,9 +1,10 @@
 # WATTCAP
+
 WATTCAP sets a power limit on every NVIDIA RTX 3090 in your PC, so the cards stay cooler and quieter at a lower wattage, and reapplies the limit every time Windows starts.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/walladanger/rtx-wattcap/ci.yml?branch=main&label=CI)](.github/workflows/ci.yml) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) ![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)
 
-It's a single Windows batch file, `deliverable/gpu-power-limit.cmd`, with a small PowerShell and C# layer for the boot task, the monitor, and the intro animation. There's an optional animated desktop-icon launcher in `launcher/`.
+It also includes a live monitor, usage reports, and per-card profiles. It's a single Windows batch file, `deliverable/gpu-power-limit.cmd`, with a small PowerShell and C# layer for the boot task, the monitor, and the intro animation. There's an optional animated desktop-icon launcher in `launcher/`.
 
 > **Warning:** this changes how hard your GPUs run. Use the reset option (`[2]`) to return to the stock limit at any time.
 
@@ -18,10 +19,11 @@ graph TD
     Menu --> Monitor["live monitor"]
     Monitor --> CsvLog["CSV log"]
     CsvLog --> Report["usage/efficiency report"]
+    Menu --> Intro["intro/outro animations"]
     subgraph "PowerShell/C# layer"
-        Menu
         BootTask
         Monitor
+        Intro
     end
 ```
 
